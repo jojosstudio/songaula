@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aktuelles Lied</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h3>Navigation</h3>
+        <ul>
+            <li><a href="add.html">Zum Liedwunsch</a></li>
+            <li><a href="admin.html">Admin-Bereich</a></li>
+        </ul>
+    </div>
+    <div class="content">
+        <div class="spotify-embed">
+            <img id="albumCover" src="default-cover.jpg" alt="Album Cover">
+            <h2 id="currentSongTitle">Lade Lied...</h2>
+            <p id="currentSongArtist">Künstler</p>
+            <a id="currentSongLink" href="#" target="_blank">Jetzt anhören</a>
+        </div>
+    </div>
+    <script>
+        const serverUrl = 'http://109.71.254.139:25567/';
+
+        function loadCurrentSong() {
+            fetch(`${serverUrl}/songs`)
+                .then(response => response.json())
+                .then(songs => {
+                    if (songs.length > 0) {
+                        const song = songs[0];
+                        document.getElementById('currentSongTitle').textContent = song.title;
+                        document.getElementById('currentSongArtist').textContent = song.artist || 'Unbekannter Künstler';
+                        document.getElementById('albumCover').src = song.cover || 'default-cover.jpg';
+                        document.getElementById('currentSongLink').href = song.link;
+                    } else {
+                        document.getElementById('currentSongTitle').textContent = 'Keine Lieder verfügbar';
+                        document.getElementById('currentSongArtist').textContent = '';
+                        document.getElementById('currentSongLink').style.display = 'none';
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('currentSongTitle').textContent = 'Fehler beim Laden des Liedes';
+                    document.getElementById('currentSongArtist').textContent = '';
+                    document.getElementById('currentSongLink').style.display = 'none';
+                });
+        }
+
+        // Lade das aktuelle Lied beim Start
+        loadCurrentSong();
+    </script>
+</body>
+</html>

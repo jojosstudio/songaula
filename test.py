@@ -1,0 +1,1 @@
+rm songs.db  # Lösche die bestehende Datenbankdatei

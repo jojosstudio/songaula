@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin-Bereich</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h3>Navigation</h3>
+        <ul>
+            <li><a href="index.html">Zurück zur Startseite</a></li>
+            <li><a href="add.html">Zum Liedwunsch</a></li>
+        </ul>
+    </div>
+    <div class="content">
+        <h1>Admin-Bereich</h1>
+        <div id="loginForm">
+            <label for="password">Passwort:</label>
+            <input type="password" id="password">
+            <button onclick="login()">Login</button>
+        </div>
+        <div id="songList" style="display: none;">
+            <h2>Liedwünsche verwalten</h2>
+            <ul id="songs">
+                <!-- Dynamisch generierte Liste von Liedern -->
+            </ul>
+            <button id="addSongButton">Neues Lied hinzufügen</button>
+            <h2>Nächstes Lied</h2>
+            <p id="nextSong">Lade nächstes Lied...</p>
+        </div>
+        <div id="message"></div>
+    </div>
+
+    <!-- The Modal -->
+    <div id="addSongModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Neues Lied hinzufügen</h2>
+            <form id="addSongForm">
+                <label for="link">Link zum Lied (YouTube oder Spotify):</label>
+                <input type="url" id="link" name="link" required>
+                <label for="addedBy">Hinzugefügt von:</label>
+                <input type="text" id="addedBy" name="addedBy" required>
+                <button type="submit">Lied hinzufügen</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const serverUrl = 'http://109.71.254.139:25567';
+        const correctPassword = 'geheim'; // Beispielpasswort
+
+        function login() {
+            const password = document.getElementById('password').value;
+            if (password === correctPassword) {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('songList').style.display = 'block';
+                loadSongs();
+                loadNextSong();
+            } else {
+                showMessage('Falsches Passwort!', 'red');
+            }
+        }
+
+        function loadSongs() {
+            fetch(`${serverUrl}/songs`)
+                .then(response => response.json())
+                .then(songs => {
+                    const songList = document.getElementById('songs');
+                    songList.innerHTML = '';
+                    songs.forEach((song) => {
+                        const li = document.createElement('li');
+                        li.textContent = `${song.title} - ${song.artist}`;
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Löschen';
+                        deleteButton.onclick = () => deleteSong(song.id, li);
+                        li.appendChild(deleteButton);
+                        songList.appendChild(li);
+                    });
+                })
+                .catch(() => showMessage('Fehler beim Laden der Lieder.', 'red'));
+        }
+
+        function loadNextSong() {
+            fetch(`${serverUrl}/songs`)
+                .then(response => response.json())
+                .then(songs => {
+                    if (songs.length > 0) {
+                        const song = songs[0];
+                        document.getElementById('nextSong').innerHTML = `<a href="${song.link}" target="_blank">${song.title} - ${song.artist}</a>`;
+                    } else {
+                        document.getElementById('nextSong').textContent = 'Keine Lieder verfügbar';
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('nextSong').textContent = 'Fehler beim Laden des nächsten Liedes';
+                });
+        }
+
+        function deleteSong(id, li) {
+            fetch(`${serverUrl}/songs/${id}`, {
+                method: 'DELETE'
+            })
+            .then(() => li.remove())
+            .catch(() => showMessage('Fehler beim Löschen des Liedes.', 'red'));
+        }
+
+        document.getElementById('addSongForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const link = document.getElementById('link').value;
+            const addedBy = document.getElementById('addedBy').value;
+
+            fetch(`${serverUrl}/songs`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ link, added_by: addedBy })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (response.ok) {
+                    showMessage('Lied wurde hinzugefügt!', 'green');
+                    loadSongs(); // Aktualisiert die Liste der Lieder
+                    document.getElementById('addSongForm').reset();
+                    closeModal(); // Close modal after adding song
+                } else {
+                    showMessage('Fehler: ' + data.error, 'red');
+                }
+            })
+            .catch(() => showMessage('Fehler beim Hinzufügen des Liedes.', 'red'));
+        });
+
+        function showMessage(message, color) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = message;
+            messageDiv.style.color = color;
+        }
+
+        // Modal control
+        const modal = document.getElementById('addSongModal');
+        const btn = document.getElementById('addSongButton');
+        const span = document.getElementsByClassName('close')[0];
+
+        btn.onclick = function() {
+            modal.style.display = 'flex';
+        }
+
+        span.onclick = function() {
+            modal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        // Initialisiere die Login-Formularanzeige
+        document.getElementById('loginForm').style.display = 'block';
+    </script>
+</body>
+</html>
